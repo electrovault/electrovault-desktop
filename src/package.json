@@ -29,9 +29,11 @@
     "node-cmd": "^3.0.0",
     "path": "^0.12.7",
     "request": "^2.83.0",
+    "request-progress": "^3.0.0",
     "store": "^2.0.12",
     "unzip": "^0.1.11",
     "vue": "^2.3.3",
+    "vue-progressbar": "^0.7.3",
     "vue-router": "^3.0.1",
     "vuex": "^2.3.1"
   },

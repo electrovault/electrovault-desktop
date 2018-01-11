@@ -13,6 +13,7 @@
       <div class="doc">
         <div class="title">Installing...</div>
         <ul class="install-list">
+          <vue-progress-bar></vue-progress-bar>
           <li v-for="step in installSteps">
             <div class="progress" v-bind:class="{ pending: step.pending, error: step.error, success: step.success }"></div> {{ step.title }}
           </li>
@@ -38,6 +39,7 @@ var cmd = require('node-cmd');
 var store = require('store');
 var request = require('request');
 var unzip = require('unzip');
+var progress = require('request-progress');
 
 const remote = require('electron').remote
 
@@ -118,23 +120,42 @@ export default {
         self.installDone = true;
       }
     },
-
+    niceBytes(x){
+      var units = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+      let l = 0, n = parseInt(x, 10) || 0;
+      while(n >= 1024){
+          n = n/1024;
+          l++;
+      }
+      return(n.toFixed(n >= 10 || l < 1 ? 0 : 1) + ' ' + units[l]);
+    },
     // No linux or mac support as of yet.
     download(url, outputFile) {
       var self = this;
       self.installSteps[1].pending = true;
+      //self.$Progress.start();
 
-      request(url)
-        .pipe(fs.createWriteStream(outputFile))
-        /*.on('error', function(err) {
-          self.installSteps[1].pending = false;
-          self.installSteps[1].error = true;
-          self.installSteps[1].success = false;
-        })*/
-        .on('close', function() {
-          console.log("Successful download...");
-          self.checkComplete();
-        });
+      progress(request(url))
+        .on('progress', function (state) {
+          console.log('progress', state);
+          console.log('prog :: ' + state.percent)
+          var percent = state.percent*100;
+          console.log('progress :: ' + percent);
+          if(percent > 1) {
+            console.log('Update Progress To :: ' + percent);
+            this[1].set(percent);
+            this[2].title = "Downloading Electroneum ("+this[3].niceBytes(state.speed)+"/s)";
+          }
+        }.bind({1:self.$Progress,2:self.installSteps[1],3:self}))
+        .on('error', function (err) {
+            // Do something with err
+        })
+        .on('end', function () {
+            // Do something after request finishes
+            debugger;
+        })
+        .pipe(fs.createWriteStream(outputFile));
+
     },
     getFilesizeInBytes(filename) {
       const stats = fs.statSync(filename)
