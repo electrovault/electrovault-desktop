@@ -59,19 +59,25 @@ export default {
           'success': false
         },
         {
-          'title': 'Downloading Electroneum',
+          'title': 'Downloading Dependencies',
           'pending': false,
           'error': false,
           'success': false
         },
         {
-          'title': 'Unzipping and setting some small things up',
+          'title': 'Installing Dependencies',
           'pending': false,
           'error': false,
           'success': false
         },
         {
-          'title': 'Finishing final touches',
+          'title': 'Downloading Blockchain (This could take a while)',
+          'pending': false,
+          'error': false,
+          'success': false
+        },
+        {
+          'title': 'Cleaning Up',
           'pending': false,
           'error': false,
           'success': false
@@ -96,10 +102,14 @@ export default {
       downloadsMac: [
 
       ],
+      directories: [
+
+      ],
       complete: -1,
       installDone: false,
       w: remote.getCurrentWindow(),
-      downloadBar: 0
+      downloadBar: 0,
+      arch: null
     }
   },
   methods: {
@@ -113,12 +123,11 @@ export default {
     close() {
       this.w.close();
     },
-
     // Check if setup is complete.
     checkComplete() {
       var self = this;
 
-      if (self.installSteps[0].success == true && self.installSteps[1].success == true && self.installSteps[2].success == true && self.installSteps[3].success == true) {
+      if (self.installSteps[0].success == true && self.installSteps[1].success == true && self.installSteps[2].success == true && self.installSteps[3].success == true && self.installSteps[4].success == true) {
         store.set('setupComplete', true);
         self.installDone = true;
       }
@@ -145,21 +154,22 @@ export default {
           console.log('progress :: ' + percent);
           self.downloadBar = percent;
           if (percent > 1) {
-            this[1].set(percent);
-            this[2].title = "Downloading Electroneum (" + this[3].niceBytes(state.speed) + "/s)";
+            this[1].$Progress.set(percent);
+            this[1].installSteps[1].title = "Downloading Electroneum (" + this[1].niceBytes(state.speed) + "/s)";
           }
         }.bind({
-          1: self.$Progress,
-          2: self.installSteps[1],
-          3: self
+          1: self
         }))
         .on('error', function(err) {
           self.makeError(1);
         })
         .on('end', function() {
-          console.log("Done")
           self.makeSuccess(1);
           store.set('coreDownloaded', true);
+          self.$Progress.set(100)
+          self.$Progress.finish()
+          self.makePending(2);
+          self.makeUnzip(self.directories['coreDir'], self.directories['electroDir'])
         })
         .pipe(fs.createWriteStream(outputFile));
 
@@ -196,25 +206,32 @@ export default {
       extract(file, {
         dir: target
       }, function(err) {
-        self.makeError(2);
+        if(err != undefined) {
+          self.makeError(2);
+        } else {
+          self.makeSuccess(2);
+          store.set('coreUnzipped', true)
+        }
       })
     },
 
     startInstall() {
       var self = this;
-      var electroDir = require('os').homedir() + '\\Desktop\\electrovault_wallet';
-      var coreDir = require('os').homedir() + '\\Desktop\\electrovault_wallet\\core.zip';
-      var walletsDir = electroDir + '\\wallets';
-      var arch = require('os').arch();
+      self.directories['electroDir'] = require('os').homedir() + '\\Desktop\\electrovault_wallet';
+      self.directories['coreDir'] = require('os').homedir() + '\\Desktop\\electrovault_wallet\\core.zip';
+      self.directories['walletsDir'] = self.directories['electroDir'] + '\\wallets';
+      self.arch = require('os').arch();
 
+      store.set('coreDownloaded', false)
+      store.set('coreUnzipped', false)
       // Create Electroneum directory
       self.installSteps[0].pending = true;
-      if (!fs.existsSync(electroDir)) {
+      if (!fs.existsSync(self.directories['electroDir'])) {
         console.log("Creating main directory...");
-        fs.mkdirSync(electroDir);
-        if (!fs.existsSync(walletsDir)) {
+        fs.mkdirSync(self.directories['electroDir']);
+        if (!fs.existsSync(self.directories['walletsDir'])) {
           console.log("Creating wallets directory...");
-          fs.mkdirSync(walletsDir);
+          fs.mkdirSync(self.directories['walletsDir']);
           self.makeSuccess(0);
           self.checkComplete();
         } else {
@@ -223,16 +240,16 @@ export default {
         }
         self.makeSuccess(0);
         self.checkComplete();
-      } else if (!fs.existsSync(walletsDir)) {
+      } else if (!fs.existsSync(self.directories['walletsDir'])) {
         console.log("Creating wallets directory...");
-        fs.mkdirSync(walletsDir);
+        fs.mkdirSync(self.directories['walletsDir']);
         self.makeSuccess(0);
         self.checkComplete();
-      } else if (fs.existsSync(electroDir) && fs.existsSync(walletsDir)) {
+      } else if (fs.existsSync(self.directories['electroDir']) && fs.existsSync(self.directories['walletsDir'])) {
         console.log("Skipping directories...");
         self.makeSuccess(0);
       } else {
-        alert('Please remove the current electrovault directory located at: "' + electroDir + '" and try again.')
+        alert('Please remove the current electrovault directory located at: "' + self.directories['electroDir'] + '" and try again.')
         self.makeError(0);
       }
       // End of electroneum directory creation.
@@ -241,46 +258,47 @@ export default {
       self.installSteps[1].pending = true;
       if (self.installSteps[0].success == true) {
         // Download Electroneum daemon and requisite files
-        if (!fs.existsSync(coreDir)) {
-          if (arch == 'x64') {
+        if (!fs.existsSync(self.directories['coreDir'])) {
+          if (self.arch == 'x64') {
             var windl = self.downloadsWindows[0].url;
             console.log("Starting download...");
-            self.download(windl, coreDir);
-            if (self.getFilesizeInBytes(coreDir) == 111511171) {
+            self.download(windl, self.directories['coreDir']);
+            if (self.getFilesizeInBytes(self.directories['coreDir']) == 111511171) {
               self.makeSuccess(1);
               self.downloadsWindows[0].finished = true;
             }
-          } else if (arch == 'x86' || arch == 'x32') {
+          } else if (self.arch == 'x86' || self.arch == 'x32') {
             var windl = self.downloadsWindows[1].url;
             console.log("Starting download...");
-            self.download(windl, coreDir);
-            if (self.getFilesizeInBytes(coreDir) == 111511171) {
+            self.download(windl, self.directories['coreDir']);
+            if (self.getFilesizeInBytes(self.directories['coreDir']) == 111511171) {
               self.makeSuccess(1);
               self.downloadsWindows[0].finished = true;
             }
           }
         } else {
-          if (self.getFilesizeInBytes(coreDir) == 111511171) {
+          if (self.getFilesizeInBytes(self.directories['coreDir']) == 111511171) {
             console.log("Skipping download...")
             self.makeSuccess(1);
+            store.set('coreDownloaded', true);
             self.checkComplete();
           } else {
             // remove the download and start again
             console.log("Removing old file ...")
-            fs.unlinkSync(coreDir);
-            if (arch == 'x64') {
+            fs.unlinkSync(self.directories['coreDir']);
+            if (self.arch == 'x64') {
               var windl = self.downloadsWindows[0].url;
               console.log("Starting download...");
-              self.download(windl, coreDir);
-              if (self.getFilesizeInBytes(coreDir) == 111511171) {
+              self.download(windl, self.directories['coreDir']);
+              if (self.getFilesizeInBytes(self.directories['coreDir']) == 111511171) {
                 self.makeSuccess(1);
                 self.downloadsWindows[0].finished = true;
               }
-            } else if (arch == 'x86' || arch == 'x32') {
+            } else if (self.arch == 'x86' || self.arch == 'x32') {
               var windl = self.downloadsWindows[1].url;
               console.log("Starting download...");
-              self.download(windl, coreDir);
-              if (self.getFilesizeInBytes(coreDir) == 111511171) {
+              self.download(windl, self.directories['coreDir']);
+              if (self.getFilesizeInBytes(self.directories['coreDir']) == 111511171) {
                 self.makeSuccess(1);
                 self.downloadsWindows[0].finished = true;
               }
@@ -293,7 +311,10 @@ export default {
 
       if (store.get('coreDownloaded') == true) {
         self.makePending(2);
-        alert("Unzip here!")
+        self.makeUnzip(self.directories['coreDir'], self.directories['electroDir'])
+      }
+      if (store.get('coreUnzipped') == true) {
+        debugger;
       }
     }
   },
