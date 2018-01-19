@@ -99,9 +99,11 @@ export default {
           'finished': false
         }
       ],
-      downloadsMac: [
-
-      ],
+      downloadsMac: [{
+        'component': 'macOS-x64',
+        'url': 'https://github.com/electroneum/electroneum/releases/download/v0.11.0.0/macOS-x64-0.11.0.0.zip',
+        'finished': false
+      }],
       directories: [
 
       ],
@@ -109,7 +111,8 @@ export default {
       installDone: false,
       w: remote.getCurrentWindow(),
       downloadBar: 0,
-      arch: null
+      arch: null,
+      height: 0
     }
   },
   methods: {
@@ -211,31 +214,33 @@ export default {
 
       // make a request to the wallet
       let options = {
-          hostname: '127.0.0.1',
-          port: '26968',
-          path: '/json_rpc',
-          method: 'POST',
-          headers: headers
+        hostname: '127.0.0.1',
+        port: '26968',
+        path: '/json_rpc',
+        method: 'POST',
+        headers: headers
       };
       let requestPromise = new Promise((resolve, reject) => {
-          let data = '';
-          let req = http.request(options, (res) => {
-              res.setEncoding('utf8');
-              res.on('data', (chunk) => { data += chunk; });
-              res.on('end', function() {
-                  let body = JSON.parse(data);
-                  if(body && body.result) {
-                      resolve(body.result);
-                  } else if (body && body.error) {
-                      resolve(body.error);
-                  } else {
-                      resolve('Wallet response error. Please try again.');
-                  }
-              });
+        let data = '';
+        let req = http.request(options, (res) => {
+          res.setEncoding('utf8');
+          res.on('data', (chunk) => {
+            data += chunk;
           });
-          req.on('error', (e) => resolve(e));
-          req.write(requestJSON);
-          req.end();
+          res.on('end', function() {
+            let body = JSON.parse(data);
+            if (body && body.result) {
+              resolve(body.result);
+            } else if (body && body.error) {
+              resolve(body.error);
+            } else {
+              resolve('Wallet response error. Please try again.');
+            }
+          });
+        });
+        req.on('error', (e) => resolve(e));
+        req.write(requestJSON);
+        req.end();
       });
 
       return requestPromise;
@@ -243,15 +248,16 @@ export default {
     getHeight() {
       var self = this;
       var body = {
-        id:"0",
-        jsonrpc:"2.0",
-        method:"get_info"
+        id: "0",
+        jsonrpc: "2.0",
+        method: "get_info"
       };
       var res = self.jsonRpcRequest(body).then(function(result) {
         self.localInfo = result
-        request('https://supply.electroneum.com', function(a,b,c) {
+        request('https://supply.electroneum.com', function(a, b, c) {
           self.targetHeight = JSON.parse(c).height;
-          self.installSteps[3].title = "Downloading Blockchain ("+self.localInfo.height+"/"+self.targetHeight+")"
+          self.height = self.localInfo.height;
+          self.installSteps[3].title = "Downloading Blockchain (" + self.localInfo.height + "/" + self.targetHeight + ")"
         });
       });
     },
@@ -260,7 +266,7 @@ export default {
       extract(file, {
         dir: target
       }, function(err) {
-        if(err != undefined) {
+        if (err != undefined) {
           self.makeError(2);
         } else {
           store.set('coreUnzipped', true)
@@ -277,14 +283,14 @@ export default {
       var spawn = require('child_process').execFile;
       var executablePath = self.directories['electroDir'] + '\\electroneumd.exe';
       var daemon = spawn(executablePath);
-      daemon.stdout.on('data', (data) => {
-        if(data.indexOf('Initializing core rpc server...') != -1) {
+      daemon.stdout.on('data', function(data) {
+        console.log(data);
+        if (data.indexOf('Core rpc server started ok') != -1) {
           setInterval(function() {
-            self.getHeight()
-          }, 250);
+            self.getHeight();
+          }, 5000)
         }
-      })
-      //self.getInitialHeight()
+      });
     },
     startInstall() {
       var self = this;
@@ -345,6 +351,8 @@ export default {
               self.makeSuccess(1);
               self.downloadsWindows[0].finished = true;
             }
+          } else {
+            console.log()
           }
         } else {
           if (self.getFilesizeInBytes(self.directories['coreDir']) == 111511171) {
