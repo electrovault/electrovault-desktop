@@ -41,7 +41,7 @@ var request = require('request');
 var unzip = require('unzip');
 var progress = require('request-progress');
 var extract = require('extract-zip')
-
+var http = require('http');
 
 const remote = require('electron').remote
 
@@ -168,6 +168,7 @@ export default {
           store.set('coreDownloaded', true);
           self.$Progress.set(100)
           self.$Progress.finish()
+          self.installSteps[1].title = "Download Completed"
           self.makePending(2);
           self.makeUnzip(self.directories['coreDir'], self.directories['electroDir'])
         })
@@ -200,7 +201,60 @@ export default {
       self.installSteps[num].error = false;
       self.installSteps[num].success = true;
     },
+    jsonRpcRequest(body) {
+      let requestJSON = JSON.stringify(body);
 
+      // set basic headers
+      let headers = {};
+      headers['Content-Type'] = 'application/json';
+      headers['Content-Length'] = Buffer.byteLength(requestJSON, 'utf8');
+
+      // make a request to the wallet
+      let options = {
+          hostname: '127.0.0.1',
+          port: '26968',
+          path: '/json_rpc',
+          method: 'POST',
+          headers: headers
+      };
+      let requestPromise = new Promise((resolve, reject) => {
+          let data = '';
+          let req = http.request(options, (res) => {
+              res.setEncoding('utf8');
+              res.on('data', (chunk) => { data += chunk; });
+              res.on('end', function() {
+                  let body = JSON.parse(data);
+                  if(body && body.result) {
+                      resolve(body.result);
+                  } else if (body && body.error) {
+                      resolve(body.error);
+                  } else {
+                      resolve('Wallet response error. Please try again.');
+                  }
+              });
+          });
+          req.on('error', (e) => resolve(e));
+          req.write(requestJSON);
+          req.end();
+      });
+
+      return requestPromise;
+    },
+    getHeight() {
+      var self = this;
+      var body = {
+        id:"0",
+        jsonrpc:"2.0",
+        method:"get_info"
+      };
+      var res = self.jsonRpcRequest(body).then(function(result) {
+        self.localInfo = result
+        request('https://supply.electroneum.com', function(a,b,c) {
+          self.targetHeight = JSON.parse(c).height;
+          self.installSteps[3].title = "Downloading Blockchain ("+self.localInfo.height+"/"+self.targetHeight+")"
+        });
+      });
+    },
     makeUnzip(file, target) {
       var self = this;
       extract(file, {
@@ -209,12 +263,29 @@ export default {
         if(err != undefined) {
           self.makeError(2);
         } else {
-          self.makeSuccess(2);
           store.set('coreUnzipped', true)
+          self.makeSuccess(2);
+          self.installSteps[2].title = "Dependencies Installed"
+          console.log("Dependencies Installed :: Start The Daemon")
+          self.makePending(3);
+          self.runDaemon();
         }
       })
     },
-
+    runDaemon() {
+      var self = this;
+      var spawn = require('child_process').execFile;
+      var executablePath = self.directories['electroDir'] + '\\electroneumd.exe';
+      var daemon = spawn(executablePath);
+      daemon.stdout.on('data', (data) => {
+        if(data.indexOf('Initializing core rpc server...') != -1) {
+          setInterval(function() {
+            self.getHeight()
+          }, 250);
+        }
+      })
+      //self.getInitialHeight()
+    },
     startInstall() {
       var self = this;
       self.directories['electroDir'] = require('os').homedir() + '\\Desktop\\electrovault_wallet';
@@ -223,7 +294,6 @@ export default {
       self.arch = require('os').arch();
 
       store.set('coreDownloaded', false)
-      store.set('coreUnzipped', false)
       // Create Electroneum directory
       self.installSteps[0].pending = true;
       if (!fs.existsSync(self.directories['electroDir'])) {
@@ -312,9 +382,6 @@ export default {
       if (store.get('coreDownloaded') == true) {
         self.makePending(2);
         self.makeUnzip(self.directories['coreDir'], self.directories['electroDir'])
-      }
-      if (store.get('coreUnzipped') == true) {
-        debugger;
       }
     }
   },
