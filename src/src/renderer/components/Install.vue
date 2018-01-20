@@ -264,9 +264,13 @@ export default {
           if (self.localInfo.height >= self.targetHeight) {
             store.set('setupComplete', true);
             self.installSteps[3].title = "Blockchain Downloaded"
+            self.makeSuccess(0);
+            self.makeSuccess(1);
+            self.makeSuccess(2);
             self.makeSuccess(3);
             self.makeSuccess(4);
-            self.$router.push('/wallet');
+            self.checkComplete();
+            //self.$router.push('/wallet');
           }
         });
       });

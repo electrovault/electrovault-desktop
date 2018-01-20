@@ -13,9 +13,7 @@
         <div class="doc">
           <div class="title">Installation</div>
           <p>
-            To get started with ElectroVault, you will need to install both electroneumd and electroneum-wallet-rpc,
-            both of these .exe's are needed for this wallet to function properly. This install is easily done with ElectroVault,
-            simply click the button below!
+            To get started with ElectroVault, just click install!
           </p>
           <button><router-link style="color: white; text-decoration: none;" class="button" to="/install">Install</router-link></button><br><br>
         </div>
