@@ -44,6 +44,9 @@ var extract = require('extract-zip')
 var http = require('http');
 
 const remote = require('electron').remote
+const {
+  ipcRenderer
+} = require('electron');
 
 export default {
   name: 'install',
@@ -258,6 +261,13 @@ export default {
           self.targetHeight = JSON.parse(c).height;
           self.height = self.localInfo.height;
           self.installSteps[3].title = "Downloading Blockchain (" + self.localInfo.height + "/" + self.targetHeight + ")"
+          if (self.localInfo.height >= self.targetHeight) {
+            store.set('setupComplete', true);
+            self.installSteps[3].title = "Blockchain Downloaded"
+            self.makeSuccess(3);
+            self.makeSuccess(4);
+            self.$router.push('/wallet');
+          }
         });
       });
     },
@@ -280,17 +290,21 @@ export default {
     },
     runDaemon() {
       var self = this;
-      var spawn = require('child_process').execFile;
       var executablePath = self.directories['electroDir'] + '\\electroneumd.exe';
-      var daemon = spawn(executablePath);
-      daemon.stdout.on('data', function(data) {
-        console.log(data);
-        if (data.indexOf('Core rpc server started ok') != -1) {
+      console.log(ipcRenderer.sendSync('synchronous-message', {
+        message: "start_daemon",
+        path: executablePath
+      }))
+      ipcRenderer.on('ping', (event, message) => {
+        if (message == 'start_height') {
+          console.log('Starting height...');
           setInterval(function() {
             self.getHeight();
           }, 5000)
+        } else {
+          console.log("Not a valid IPC request...");
         }
-      });
+      })
     },
     startInstall() {
       var self = this;

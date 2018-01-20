@@ -33,6 +33,9 @@
   import SystemInformation from './LandingPage/SystemInformation';
 
   var store = require('store');
+  const {
+    ipcRenderer
+  } = require('electron');
 
 
   export default {
@@ -45,12 +48,24 @@
 
       open(link) {
         this.$electron.shell.openExternal(link);
-      },
+      }
+    },
+    mounted: function() {
+      if (store.get('setupComplete') == true) {
+        var self = this;
 
-      mounted: function() {
-        if (store.get('setupComplete') == true) {
-          this.$router.push('/wallet')
-        }
+        // Get path
+        var electroDir = require('os').homedir() + '\\Desktop\\electrovault_wallet';
+        var executablePath = electroDir + '\\electroneumd.exe';
+
+        // Send message to start Daemon
+        console.log(ipcRenderer.sendSync('synchronous-message', {
+          message: "start_daemon",
+          path: executablePath
+        }))
+
+        // Move to wallet page
+        self.$router.push('/wallet')
       }
     }
   }
