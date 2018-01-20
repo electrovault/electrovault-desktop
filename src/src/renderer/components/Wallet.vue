@@ -28,8 +28,12 @@
 </template>
 
 <script>
+import SystemInformation from './LandingPage/SystemInformation'
   export default {
     name: 'wallet',
+    components: {
+      SystemInformation
+    },
     methods: {
       notif (text) {
         alert(text)
