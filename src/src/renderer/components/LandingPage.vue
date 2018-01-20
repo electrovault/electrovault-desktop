@@ -15,12 +15,12 @@
           <p>
             To get started with ElectroVault, just click install!
           </p>
-          <button><router-link style="color: white; text-decoration: none;" class="button" to="/install">Install</router-link></button><br><br>
+          <router-link class="button primary" to="/install" style="font-weight: 600;">Install</router-link><br><br>
         </div>
         <div class="doc">
           <div class="title alt">Donate</div>
-          <button class="alt" @click="notif('BTC: ')">Bitcoin</button>
-          <button class="alt" @click="notif('ETN: ')">Electroneum</button>
+          <button class="button button-alt" @click="notif('BTC: ')">Bitcoin</button>
+          <button class="button button-alt" @click="notif('ETN: ')">Electroneum</button>
         </div>
       </div>
     </main>
@@ -150,22 +150,45 @@
     margin-bottom: 10px;
   }
 
-  .doc button {
-    font-size: .8em;
+  .doc .button {
+    font-size: .9em;
     cursor: pointer;
     outline: none;
     padding: 0.75em 2em;
     border-radius: 2em;
     display: inline-block;
     color: #fff;
-    background-color: #4fc08d;
+    background-color: #2F77F7;
     transition: all 0.15s ease;
     box-sizing: border-box;
-    border: 1px solid #4fc08d;
+    border: 1px solid #2F77F7;
+    margin-top: 10px;
+    text-decoration: none;
+    -webkit-app-region: no-drag;
   }
 
-  .doc button.alt {
-    color: #42b983;
+  .doc .button:hover {
+    background-color: #2262d6;
+  }
+
+  .doc .button-alt {
+    color: #3e3e3e;
+    margin-right: 5px;
     background-color: transparent;
+  }
+
+  .doc .button-alt:hover {
+    background-color: #e2e2e2;
+  }
+
+  .doc .button-info {
+    border-color: #3e3e3e;
+    color: #3e3e3e;
+    margin-right: 5px;
+    background-color: transparent;
+  }
+
+  .doc .button-info:hover {
+    background-color: #e2e2e2;
   }
 </style>
