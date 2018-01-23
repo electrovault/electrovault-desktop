@@ -1,134 +1,86 @@
 <template>
-  <div id="wrapper">
-    <img id="logo" src="~@/assets/logo.png" alt="electroneum-logo">
-    <main>
-      <div class="left-side">
-        <span class="title">
-          Wallet Page
-        </span>
-        <system-information></system-information>
+<div class="wrapper">
+  <div class="sidebar" data-background-color="white" data-active-color="danger">
+    <div class="sidebar-wrapper">
+      <div class="logo">
+        <a href="#" class="simple-text">
+          <img id="logo" src="~@/assets/logo.png" alt="electroneum-logo" width="100">
+        </a>
       </div>
 
-      <div class="right-side">
-        <div class="doc">
-          <div class="title">Not Done</div>
-          <p>
-            Nothing is here yet!
-          </p>
-          <button><router-link style="color: white; text-decoration: none;" class="button">Get this page done!</router-link></button><br><br>
-        </div>
-        <div class="doc">
-          <div class="title alt">This is a title</div>
-          <button class="alt" @click="notif('BTC: ')">This is a button</button>
-          <button class="alt" @click="notif('ETN: ')">This is another button</button>
-        </div>
-      </div>
-    </main>
+      <ul class="nav">
+        <li class="active">
+          <a href="#">
+            <i class="ti-panel"></i>
+            <p>Overview</p>
+          </a>
+        </li>
+        <li>
+          <a href="#">
+            <i class="ti-arrow-right"></i>
+            <p>Send Electroneum</p>
+          </a>
+        </li>
+        <li>
+          <a href="#">
+            <i class="ti-view-list-alt"></i>
+            <p>Transactions</p>
+          </a>
+        </li>
+        <li>
+          <a href="#">
+            <i class="ti-hummer"></i>
+            <p>Mining</p>
+          </a>
+        </li>
+      </ul>
+    </div>
   </div>
+  <HomeWallet></HomeWallet>
+</div>
 </template>
 
 <script>
-import SystemInformation from './LandingPage/SystemInformation'
-  export default {
-    name: 'wallet',
-    components: {
-      SystemInformation
-    },
-    methods: {
-      notif (text) {
-        alert(text)
-      },
+import HomeWallet from './Wallet/HomeWallet';
 
-      open(link) {
-        this.$electron.shell.openExternal(link);
+export default {
+  name: 'wallet',
+  components: {
+    HomeWallet
+  },
+  data() {
+    return {
+      walletInfo: {
+        filename: '',
+        password: ''
       },
-      mounted: function() {
-        console.log("Ready!")
-      }
+      balance: {
+        available: 0,
+        unavailable: 0
+      },
+      rank: '',
+      height: ''
+    }
+  },
+  methods: {
+    notif(text) {
+      alert(text)
+    },
+
+    open(link) {
+      this.$electron.shell.openExternal(link);
+    },
+    mounted: function() {
+      console.log("Ready!")
     }
   }
+}
 </script>
 
 <style>
-  @import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro');
-
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-
-  body { font-family: 'Source Sans Pro', sans-serif; }
-
-  #wrapper {
-    background:
-      radial-gradient(
-        ellipse at top left,
-        rgba(255, 255, 255, 1) 40%,
-        rgba(229, 229, 229, .9) 100%
-      );
-    height: 100vh;
-    padding: 60px 80px;
-    width: 100vw;
-  }
-
-  #logo {
-    height: auto;
-    margin-bottom: 20px;
-    width: 100px;
-  }
-
-  main {
-    display: flex;
-    justify-content: space-between;
-  }
-
-  main > div { flex-basis: 50%; }
-
-  .left-side {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .welcome {
-    color: #555;
-    font-size: 23px;
-    margin-bottom: 10px;
-  }
-
-  .title {
-    color: #2c3e50;
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 6px;
-  }
-
-  .title.alt {
-    font-size: 18px;
-    margin-bottom: 10px;
-  }
-
-  .doc p {
-    color: black;
-    margin-bottom: 10px;
-  }
-
-  .doc button {
-    font-size: .8em;
-    cursor: pointer;
-    outline: none;
-    padding: 0.75em 2em;
-    border-radius: 2em;
-    display: inline-block;
-    color: #fff;
-    background-color: #4fc08d;
-    transition: all 0.15s ease;
-    box-sizing: border-box;
-    border: 1px solid #4fc08d;
-  }
-
-  .doc button.alt {
-    color: #42b983;
-    background-color: transparent;
-  }
+@import url('https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css');
+@import url('../assets/css/paper-dashboard.css');
+@import url('https://cdn.jsdelivr.net/gh/lykmapipo/themify-icons@0.1.2/css/themify-icons.css');
+@import url('../assets/css/animate.min.css');
+@import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro');
 </style>
