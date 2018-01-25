@@ -118,7 +118,7 @@ export default {
         message: "start_wallet",
         path: executablePath
       }))
-    }
+    },
 
     createWallet(filename, password) {
       var self = this;
