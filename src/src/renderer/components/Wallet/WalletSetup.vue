@@ -130,8 +130,8 @@ export default {
           "filename": filename,
           "password": password,
           "language": "English"
-        };
-      }
+        }
+      };
       var res = self.jsonRpcRequest(body).then(function(result) {
         console.log(result);
         self.walletComplete();
